@@ -288,8 +288,6 @@ class SlopeSense(QMainWindow):
             return
 
         summary = ""
-        total_distance = 0
-        total_gradient = 0
 
         # Calculate the gradients for the segments
         segments = []
@@ -311,8 +309,6 @@ class SlopeSense(QMainWindow):
         distance = sorted_points[0][0] - start_distance
         gradient = (sorted_points[0][1] - start_elevation) / distance if distance > 0 else 0.0
         segments.append((distance, gradient))
-        total_distance += distance
-        total_gradient += gradient
 
         # Handle the remaining points
         for i in range(len(sorted_points) - 1):
@@ -326,8 +322,6 @@ class SlopeSense(QMainWindow):
             else:
                 gradient = 0.0
             segments.append((distance, gradient))
-            total_distance += distance
-            total_gradient += gradient
 
         # Handle the last point separately
         start_distance = sorted_points[-1][0]
@@ -337,8 +331,6 @@ class SlopeSense(QMainWindow):
         distance = end_distance - start_distance
         gradient = (end_elevation - start_elevation) / distance if distance > 0 else 0.0
         segments.append((distance, gradient))
-        total_distance += distance
-        total_gradient += gradient
 
         # Build the summary string
         summary = ""
@@ -350,7 +342,8 @@ class SlopeSense(QMainWindow):
                 grade = f"{gradient * 100:.1f}%"
             summary += f"{i+1}) {distance/1000:.1f} km at {grade} grade\n"
 
-        summary += f"\nTotal: {total_distance/1000:.1f} km and {total_gradient * 100:.1f}% grade"
+        total_gradient = (self.elevation_data[-1] - self.elevation_data[0]) / self.distances[-1]
+        summary += f"\nTotal: {self.distances[-1]/1000:.1f} km and {total_gradient * 100:.1f}% grade"
 
         QMessageBox.information(self, "Summary", summary)
 
