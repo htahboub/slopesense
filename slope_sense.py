@@ -91,7 +91,7 @@ class SlopeSense(QMainWindow):
         self.setCentralWidget(widget)
 
         # Create a label and text box for setting the window size
-        self.window_size_label = QLabel("Minima Window Search Size (smaller = more points):")
+        self.window_size_label = QLabel("Extrema Window Search Size (smaller = more points):")
         self.window_size_textbox = QSpinBox()
         self.window_size_textbox.setMaximum(1000)
         self.window_size_textbox.setValue(80)
