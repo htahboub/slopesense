@@ -28,13 +28,13 @@ SlopeSense is a simple PyQt-based application that allows you to load and analyz
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/your-username/elevation-app.git
+   git clone https://github.com/HTahboub/slopesense.git
    ```
 
 2. Install the required libraries using pip:
 
    ```bash
-   cd elevation-app
+   cd slopesense
    pip install -r requirements.txt
    ```
 
