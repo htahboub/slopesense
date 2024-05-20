@@ -13,11 +13,10 @@ from PyQt5.QtWidgets import (
 
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from geopy.distance import distance
+from geopy.distance import distance as measure_distance
 import xml.etree.ElementTree as ET
 
 import numpy as np
-import time
 import argparse
 import sys
 import os
@@ -39,7 +38,7 @@ class SlopeSense(QMainWindow):
             QMessageBox.warning(
                 self,
                 "Invalid GPX File",
-                "Distance is too small. Please use a GPX file with a distance greater than 100 meters.",
+                "Distance is too small. Please use a GPX file with a distance greater than 100 meters.",  # noqa: E501
             )
             sys.exit()
 
@@ -91,7 +90,9 @@ class SlopeSense(QMainWindow):
         self.setCentralWidget(widget)
 
         # Create a label and text box for setting the window size
-        self.window_size_label = QLabel("Extrema Window Search Size (smaller = more points):")
+        self.window_size_label = QLabel(
+            "Extrema Window Search Size (smaller = more points):"
+        )
         self.window_size_textbox = QSpinBox()
         self.window_size_textbox.setMaximum(1000)
         self.window_size_textbox.setValue(80)
@@ -124,11 +125,16 @@ class SlopeSense(QMainWindow):
         local_extrema = []
 
         for i in range(window_length, len(self.elevation_data) - window_length):
-            window = self.elevation_data[i - window_length : i + window_length + 1]
+            window = self.elevation_data[
+                i - window_length : i + window_length + 1  # noqa: E203
+            ]
             max_value = max(window)
             min_value = min(window)
 
-            if self.elevation_data[i] == max_value or self.elevation_data[i] == min_value:
+            if (
+                self.elevation_data[i] == max_value
+                or self.elevation_data[i] == min_value
+            ):
                 local_extrema.append((self.distances[i], self.elevation_data[i]))
 
         self.selected_points.append(local_extrema)
@@ -148,7 +154,7 @@ class SlopeSense(QMainWindow):
         ns = {"gpx": "http://www.topografix.com/GPX/1/1"}
 
         # Find all <ele> elements
-        elevation_elements = root.findall(".//gpx:ele", ns)
+        elevation_elements = root.findall(".//gpx:trkpt/gpx:ele", ns)
 
         # Extract elevation data from elements
         elevation_data = [float(element.text) for element in elevation_elements]
@@ -165,7 +171,7 @@ class SlopeSense(QMainWindow):
             lon1 = float(point1.get("lon"))
             lat2 = float(point2.get("lat"))
             lon2 = float(point2.get("lon"))
-            dist = distance((lat1, lon1), (lat2, lon2)).meters
+            dist = measure_distance((lat1, lon1), (lat2, lon2)).meters
             cumulative_dist = distances[i - 1] + dist
             distances.append(cumulative_dist)
 
@@ -182,9 +188,9 @@ class SlopeSense(QMainWindow):
         if self.selected_points:
             points = []
             for point in self.selected_points:
-                if type(point) == list:
+                if isinstance(point, list):
                     points.extend(point)
-                elif type(point) == tuple:
+                elif isinstance(point, tuple):
                     points.append(point)
                 else:
                     raise TypeError("Point must be a list or tuple")
@@ -212,25 +218,22 @@ class SlopeSense(QMainWindow):
                 closest_idx = self.find_closest_index(x)
                 cx = self.distances[closest_idx]
                 cy = self.elevation_data[closest_idx]
-                # Check if the clicked coordinates are within a radius of a selected point
+                # Check if the clicked coordinates are within a radius of selected point
                 remove_point = False
-                tolerance = self.distances[-1]/300
+                tolerance = self.distances[-1] / 300
                 for point in self.selected_points:
-                    if type(point) == list:
-                        # Check if the clicked coordinates are within a radius of a selected point
+                    if isinstance(point, list):
                         for sub_point in point:
                             point_x, _ = sub_point
                             if abs(point_x - cx) <= tolerance:
-                                # Clicked within the radius of a sub selected point, remove it
                                 self.selected_points.remove(point)
                                 point.remove(sub_point)
                                 self.selected_points.append(point)
                                 remove_point = True
                                 break
-                    elif type(point) == tuple:
+                    elif isinstance(point, tuple):
                         point_x, _ = point
                         if abs(point_x - cx) <= tolerance:
-                            # Clicked within the radius of a selected point, remove it
                             self.selected_points.remove(point)
                             remove_point = True
                             break
@@ -247,10 +250,9 @@ class SlopeSense(QMainWindow):
     def on_canvas_hover(self, event):
         if event.xdata is not None and event.ydata is not None:
             x = event.xdata
-            y = event.ydata
+            # y = event.ydata
 
             # Calculate the closest distance and elevation
-            start_time = time.time()
             closest_distance = self.find_closest_distance(x)
             closest_elevation = self.find_closest_elevation(closest_distance)
 
@@ -295,9 +297,9 @@ class SlopeSense(QMainWindow):
         # Make a sorted copy of the selected points
         points = []
         for point in self.selected_points:
-            if type(point) == list:
+            if isinstance(point, list):
                 points.extend(point)
-            elif type(point) == tuple:
+            elif isinstance(point, tuple):
                 points.append(point)
             else:
                 raise TypeError("Point must be a list or tuple")
@@ -305,9 +307,13 @@ class SlopeSense(QMainWindow):
 
         # Handle the first point separately
         start_distance = 0
-        start_elevation = self.elevation_data[0]  # Use the elevation data at the first point
+        start_elevation = self.elevation_data[
+            0
+        ]  # Use the elevation data at the first point
         distance = sorted_points[0][0] - start_distance
-        gradient = (sorted_points[0][1] - start_elevation) / distance if distance > 0 else 0.0
+        gradient = (
+            (sorted_points[0][1] - start_elevation) / distance if distance > 0 else 0.0
+        )
         segments.append((distance, gradient))
 
         # Handle the remaining points
@@ -342,8 +348,10 @@ class SlopeSense(QMainWindow):
                 grade = f"{gradient * 100:.1f}%"
             summary += f"{i+1}) {distance/1000:.1f} km at {grade} grade\n"
 
-        total_gradient = (self.elevation_data[-1] - self.elevation_data[0]) / self.distances[-1]
-        summary += f"\nTotal: {self.distances[-1]/1000:.1f} km and {total_gradient * 100:.1f}% grade"
+        total_gradient = (
+            self.elevation_data[-1] - self.elevation_data[0]
+        ) / self.distances[-1]
+        summary += f"\nTotal: {self.distances[-1]/1000:.1f} km and {total_gradient * 100:.1f}% grade"  # noqa: E501
 
         QMessageBox.information(self, "Summary", summary)
 
